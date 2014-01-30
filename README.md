@@ -1,9 +1,9 @@
 Markus-Contract
 ===============
 
-A. Copy db to a temporary db for backup. 
+A. Make a copy of the mysql DB 
 
-B. Clean redundant data
+B. Clean up the data
   1. subtopics table - remove all rows with stage!=1
   2. cells table - remove all rows with subtopic_id that doesn't exist in subtopics table
   3. cells_to_phrases table - remove all rows with cell_id that doesn't exist in cells table
@@ -15,6 +15,6 @@ B. Clean redundant data
   9. comprehension table - remove all rows with comprehension_id that doesn't exist in cells_comprehension table
   10. comprehension_distractors table - remove all rows with comprehension_id that doesn't exist in comprehension table.
 
-C. dump the result into an sqlite file on the server
+C. Dump the result into an sqlite file on the server
 
-D. refresh cloud front server via their api.
+D. Refresh cloud front server via their api.
