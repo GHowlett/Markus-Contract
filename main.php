@@ -10,6 +10,29 @@ $db = "db-name";
 
 $con = mysqli_connect($host,$user,$pass,$db);
 
+// TODO: support spaces in db names
+// takes an original db name and copies it
+function cloneDB($con, $db, $cdb) {
+	mysqli_select_db($con, $db);
+	$tables = mysqli_query("SHOW TABLES");  
+
+	// creates a new temporary db
+	mysqli_query("CREATE DATABASE $cdb");
+	mysqli_select_db($con, $cdb);
+
+	// copies each table into the new db
+	while ($table = mysqli_fetch_row($tables)) {
+		mysqli_query("CREATE TABLE $table[0] LIKE $db.$table[0]");
+		mysqli_query("INSERT INTO $table[0] SELECT * FROM $db.$table[0]");
+	}
+
+	mysqli_select_db($con, $db);
+}
+
+cloneDB($con, $db, $cdb);
+mysqli_select_db($con, $cdb);
+
+// TODO: put cleanup in a function
 $cleanup_query = "
 	DELETE FROM subtopics WHERE stage = 0;
 	DELETE FROM cells WHERE NOT EXISTS
@@ -33,5 +56,7 @@ $cleanup_query = "
 
 // TODO: apply to a copy of the db, not the original
 mysqli_query($con, $cleanup_query);
+
+// TODO: drop temporary db
 
 ?>
