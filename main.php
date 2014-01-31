@@ -5,6 +5,7 @@ $host = "example.com";
 $user = "username";
 $pass = "password";
 $db = "db-name";
+$cdb = "$db-copy";
 
 // TODO: handle network / execution failures
 
