@@ -8,7 +8,7 @@ $db = "db-name";
 
 // TODO: handle network / execution failures
 
-$con = mysqli_connect(host,user,pass,db);
+$con = mysqli_connect($host,$user,$pass,$db);
 
 $cleanup_query = "
 	DELETE FROM subtopics WHERE stage = 0;
