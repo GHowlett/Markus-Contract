@@ -1,40 +1,37 @@
 <?php
 
-// TODO: replace with actual credentials
-$host = "example.com";
-$user = "username";
-$pass = "password";
-$db = "db-name";
-$cdb = "$db-copy";
+// TODO: fill these variables with correct credentials
 
-// TODO: handle network / execution failures
+// Database Details
+$host = "localhost";	// database host
+$user = "root";			// database username
+$pass = "";				// database password
+$db = "contentdata";	// name of mySQL and SQLite database
 
-$con = mysqli_connect($host,$user,$pass,$db);
+// CloudFront Details
+$key = 89283; 			 			   	// ID of the key pair used to sign CloudFront URLs for private distributions.
+$secret = 'path/to/key'; 			   	// filepath to the private key used to sign CloudFront URLs for private distributions.
+$dist = 12245; 			 			   	// Distribution ID
+$paths = array('/ios/dev/$db.sqlite'); 	// List of objects to update / refresh
+
+////////////////////////////////////////////////////////////
+
+$cdb = "$db"."_copy";
+$con = mysqli_connect($host,$user,$pass);
 
 // TODO: support spaces in db names
-// takes an original db name and copies it
 function cloneDB($con, $db, $cdb) {
-	mysqli_select_db($con, $db);
-	$tables = mysqli_query("SHOW TABLES");  
+	$tables = mysqli_query($con, "SHOW TABLES"); 
+	mysqli_query($con, "CREATE DATABASE $cdb");
 
-	// creates a new temporary db
-	mysqli_query("CREATE DATABASE $cdb");
-	mysqli_select_db($con, $cdb);
-
-	// copies each table into the new db
+	// faster than using mysqldump
 	while ($table = mysqli_fetch_row($tables)) {
-		mysqli_query("CREATE TABLE $table[0] LIKE $db.$table[0]");
-		mysqli_query("INSERT INTO $table[0] SELECT * FROM $db.$table[0]");
+		mysqli_query($con, "CREATE TABLE $cdb.$table[0] LIKE $db.$table[0]");
+		mysqli_query($con, "INSERT INTO $cdb.$table[0] SELECT * FROM $db.$table[0]");
 	}
-
-	mysqli_select_db($con, $db);
 }
 
-cloneDB($con, $db, $cdb);
-mysqli_select_db($con, $cdb);
-
-// TODO: put cleanup in a function
-$cleanup_query = "
+function cleanupDB($con) { mysqli_query($con, "
 	DELETE FROM subtopics WHERE stage = 0;
 	DELETE FROM cells WHERE NOT EXISTS
 	  ( select * FROM subtopics WHERE cells.`subtopic_id` = subtopics.`subtopic_id`);
@@ -53,11 +50,37 @@ $cleanup_query = "
 	DELETE FROM comprehension WHERE NOT EXISTS
 	  ( select * FROM cell_comprehension WHERE cell_comprehension.comprehension_id = comprehension.id);
 	DELETE FROM comprehension_distractors WHERE NOT EXISTS
-	  ( select * FROM comprehension WHERE comprehension.id = comprehension_distractors.comprehension_id);";
+	  ( select * FROM comprehension WHERE comprehension.id = comprehension_distractors.comprehension_id);"
+);}
 
-// TODO: apply to a copy of the db, not the original
-mysqli_query($con, $cleanup_query);
+function refreshCloudFront() {
+	$client = \Aws\CloudFront\CloudFrontClient::factory(array(
+		'key_pair_id' => $key,
+		'private_key' => $secret
+	)); 
 
-// TODO: drop temporary db
+	$client->createInvalidation(array(
+	    'DistributionId' => $dist,
+	    'Paths' => array(
+	        'Quantity' => count($paths),
+	        'Items' => $paths,
+	    ),
+	    'CallerReference' => time()
+	));
+}
+
+///////////////////////////////////////////////////////////////
+
+mysqli_select_db($con, $db);
+cloneDB($con, $db, $cdb);
+
+mysqli_select_db($con, $cdb);
+cleanupDB($con);
+
+exec("mysql2sqlite.sh --user=$user --password=$pass --host=$host $cdb | sqlite3 $db.sqlite");
+
+refreshCloudFront($key, $secret, $dist, $paths);
+
+mysqli_query($con, "DROP DATABASE $cdb");
 
 ?>
