@@ -19,6 +19,9 @@ $paths = array('/ios/dev/$db.sqlite'); 	// List of objects to update / refresh
 $cdb = "$db"."_copy";
 $con = mysqli_connect($host,$user,$pass);
 
+if (mysqli_connect_errno($con)) {
+	echo "Failed to connect to MySQL: " . mysqli_connect_error(); }
+
 // TODO: support spaces in db names
 function cloneDB($con, $db, $cdb) {
 	$tables = mysqli_query($con, "SHOW TABLES"); 
@@ -77,7 +80,7 @@ cloneDB($con, $db, $cdb);
 mysqli_select_db($con, $cdb);
 cleanupDB($con);
 
-exec("mysql2sqlite.sh --user=$user --password=$pass --host=$host $cdb | sqlite3 $db.sqlite");
+shell_exec("mysql2sqlite.sh --user=$user --password=$pass --host=$host $cdb | sqlite3 $db.sqlite");
 
 refreshCloudFront($key, $secret, $dist, $paths);
 
