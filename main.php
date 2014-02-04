@@ -80,7 +80,8 @@ cloneDB($con, $db, $cdb);
 mysqli_select_db($con, $cdb);
 cleanupDB($con);
 
-shell_exec("mysql2sqlite.sh --user=$user --password=$pass --host=$host $cdb | sqlite3 $db.sqlite");
+$sqlite_queries = shell_exec("./mysql2sqlite.sh --user=$user --password=$pass --host=$host $cdb");
+(new SQLite3("$db.sqlite"))->exec($sqlite_queries);
 
 refreshCloudFront($key, $secret, $dist, $paths);
 
