@@ -34,7 +34,7 @@ function cloneDB($con, $db, $cdb) {
 	}
 }
 
-function cleanupDB($con) { mysqli_query($con, "
+function cleanupDB($con) { mysqli_multi_query($con, "
 	DELETE FROM subtopics WHERE stage = 0;
 	DELETE FROM cells WHERE NOT EXISTS
 	  ( select * FROM subtopics WHERE cells.`subtopic_id` = subtopics.`subtopic_id`);
